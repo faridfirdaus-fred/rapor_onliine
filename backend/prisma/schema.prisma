@@ -12,14 +12,17 @@ datasource db {
 
 
 
-// User model - for authentication
+// User model - for authentication (Guru only)
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
+  username  String   @unique
   password  String
   name      String
+  kelasId   String   @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  kelas     Kelas    @relation(fields: [kelasId], references: [id])
 
   @@map("users")
 }
@@ -38,12 +41,13 @@ model ResetToken {
 // Kelas model - for class management
 model Kelas {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  nama      String
+  nama      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  siswa     Siswa[]
-  nilai     Nilai[]
+  users      User[]
+  siswa      Siswa[]
+  nilai      Nilai[]
   bobotNilai BobotNilai?
 
   @@map("kelas")

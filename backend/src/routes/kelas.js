@@ -3,23 +3,25 @@ import { Kelas } from '../models/Kelas.js';
 
 const router = express.Router();
 
-// GET all kelas
+// GET all kelas - guru only sees their own kelas
 router.get('/', async (req, res) => {
   try {
-    const kelasList = await Kelas.findAll();
-    const kelasWithCount = kelasList.map((kelas) => ({
-      ...kelas,
-      jumlahSiswa: kelas._count?.siswa || 0
-    }));
-    res.json(kelasWithCount);
+    const kelas = await Kelas.findById(req.user.kelasId);
+    const kelasList = kelas ? [kelas] : [];
+    res.json(kelasList);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET kelas by ID
+// GET kelas by ID - guru can only access their own kelas
 router.get('/:id', async (req, res) => {
   try {
+    // Check access - guru can only access their own kelas
+    if (req.user.kelasId !== req.params.id) {
+      return res.status(403).json({ error: 'Access denied. You can only access your own class.' });
+    }
+    
     const kelas = await Kelas.findById(req.params.id);
     if (!kelas) {
       return res.status(404).json({ error: 'Kelas tidak ditemukan' });
@@ -30,51 +32,19 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE new kelas
+// CREATE new kelas - disabled (kelas are pre-created)
 router.post('/', async (req, res) => {
-  try {
-    const { nama } = req.body;
-    
-    if (!nama) {
-      return res.status(400).json({ error: 'Kelas harus diisi' });
-    }
-
-    const kelas = await Kelas.create({ nama });
-    res.status(201).json(kelas);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(403).json({ error: 'Creating kelas is disabled. Classes are pre-configured.' });
 });
 
-// UPDATE kelas
+// UPDATE kelas - disabled (kelas are pre-created)
 router.put('/:id', async (req, res) => {
-  try {
-    const { nama } = req.body;
-    const kelas = await Kelas.update(req.params.id, { nama });
-    
-    if (!kelas) {
-      return res.status(404).json({ error: 'Kelas tidak ditemukan' });
-    }
-
-    res.json(kelas);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(403).json({ error: 'Updating kelas is disabled. Classes are pre-configured.' });
 });
 
-// DELETE kelas
+// DELETE kelas - disabled (kelas are pre-created)
 router.delete('/:id', async (req, res) => {
-  try {
-    const result = await Kelas.delete(req.params.id);
-    
-    if (!result) {
-      return res.status(404).json({ error: 'Kelas tidak ditemukan' });
-    }
-
-    res.json({ message: 'Kelas berhasil dihapus' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(403).json({ error: 'Deleting kelas is disabled. Classes are pre-configured.' });
 });
 
 export default router;

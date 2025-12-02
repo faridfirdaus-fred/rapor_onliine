@@ -7,7 +7,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
 
-    if (!formData.email || !formData.password) {
+    if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
       return;
     }
@@ -60,14 +60,14 @@ function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-2">
-              Email Address
+              Username
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
-              placeholder="you@example.com"
+              placeholder="kelas1"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={loading}
             />
@@ -88,25 +88,6 @@ function LoginPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="remember"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
-                Remember me
-              </label>
-            </div>
-            <Link
-              to="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -117,14 +98,8 @@ function LoginPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:text-blue-800 font-semibold"
-            >
-              Sign up
-            </Link>
+          <p className="text-gray-600 text-sm">
+            Login dengan username: kelas1, kelas2, kelas3, kelas4, atau kelas5
           </p>
         </div>
       </div>

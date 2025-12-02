@@ -7,6 +7,11 @@ const router = express.Router();
 // GET bobot nilai for a kelas
 router.get('/:kelasId', async (req, res) => {
   try {
+    // Check access
+    if (req.params.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     const bobot = await BobotNilai.findByKelas(req.params.kelasId);
     res.json(bobot);
   } catch (error) {
@@ -17,6 +22,11 @@ router.get('/:kelasId', async (req, res) => {
 // CREATE or UPDATE bobot nilai for a kelas
 router.post('/:kelasId', async (req, res) => {
   try {
+    // Check access
+    if (req.params.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     const { bobotHarian, bobotUas } = req.body;
     
     if (bobotHarian === undefined || bobotUas === undefined) {

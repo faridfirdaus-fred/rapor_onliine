@@ -6,75 +6,34 @@ import { sendResetPasswordEmail, sendWelcomeEmail } from '../utils/email.js';
 
 const router = express.Router();
 
-// Register new user
+// Register new user (DISABLED - accounts are pre-created)
 router.post('/register', async (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-
-    // Check email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    // Check password length
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-
-    // Create user
-    const user = await User.create({ email, password, name });
-
-    // Generate token
-    const token = generateToken(user.id);
-
-    // Send welcome email (don't wait for it)
-    sendWelcomeEmail(user.email, user.name).catch(err => 
-      console.error('Failed to send welcome email:', err)
-    );
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: User.sanitize(user)
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed' });
-  }
+  res.status(403).json({ 
+    error: 'Registration is disabled. Please use provided credentials.',
+    message: 'Contact admin for account access.'
+  });
 });
 
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
     // Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
     }
 
     // Find user
-    const user = await User.findByEmail(email);
+    const user = await User.findByUsername(username);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Validate password
     const isValidPassword = await User.validatePassword(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Generate token

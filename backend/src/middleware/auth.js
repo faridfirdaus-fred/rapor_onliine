@@ -18,7 +18,7 @@ export const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     
     // Get user from database
-    const user = User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId);
     
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
@@ -37,6 +37,35 @@ export const authMiddleware = async (req, res, next) => {
     }
     return res.status(500).json({ error: 'Authentication error' });
   }
+};
+
+// Middleware to check if user is admin
+export const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+  next();
+};
+
+// Middleware to check if user has access to specific kelas
+export const kelasAccess = (req, res, next) => {
+  // Admin can access all kelas
+  if (req.user.role === 'admin') {
+    return next();
+  }
+
+  // Guru can only access their own kelas
+  const kelasId = req.params.kelasId || req.params.id || req.body.kelasId;
+  
+  if (!kelasId) {
+    return next(); // Let route handler deal with missing kelasId
+  }
+
+  if (req.user.kelasId !== kelasId) {
+    return res.status(403).json({ error: 'Access denied. You can only access your own class.' });
+  }
+
+  next();
 };
 
 export const generateToken = (userId) => {
