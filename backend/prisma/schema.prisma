@@ -18,6 +18,7 @@ model User {
   username  String   @unique
   password  String
   name      String
+  photo     String?
   kelasId   String   @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

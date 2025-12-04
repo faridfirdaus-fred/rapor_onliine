@@ -1,10 +1,39 @@
 import express from 'express';
 import crypto from 'crypto';
+import multer from 'multer';
+import path from 'path';
 import { User, ResetToken } from '../models/User.js';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, verifyToken } from '../middleware/auth.js';
 import { sendResetPasswordEmail, sendWelcomeEmail } from '../utils/email.js';
 
 const router = express.Router();
+
+// Configure multer for profile photo upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/profiles/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 // Register new user (DISABLED - accounts are pre-created)
 router.post('/register', async (req, res) => {
@@ -124,14 +153,59 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // Get current user (requires auth middleware)
-router.get('/me', async (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
   try {
-    // This would be called with auth middleware
-    // For now, just return error
-    res.status(401).json({ error: 'Authentication required' });
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ user: User.sanitize(user) });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
+// Get user profile
+router.get('/profile', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ 
+      profile: User.sanitize(user)
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Failed to get profile data' });
+  }
+});
+
+// Update user profile
+router.put('/profile', verifyToken, upload.single('photo'), async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    const updateData = {};
+    if (name) updateData.name = name;
+    
+    // If photo uploaded, add to update data
+    if (req.file) {
+      updateData.photo = `/uploads/profiles/${req.file.filename}`;
+    }
+    
+    const updatedUser = await User.update(req.userId, updateData);
+    
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: User.sanitize(updatedUser)
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

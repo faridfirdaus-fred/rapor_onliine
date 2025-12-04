@@ -44,9 +44,12 @@ export class User {
   }
 
   static async update(id, data) {
+    // Don't allow updating password through this method
+    const { password, ...updateData } = data;
+    
     return await prisma.user.update({
       where: { id },
-      data
+      data: updateData
     });
   }
 
