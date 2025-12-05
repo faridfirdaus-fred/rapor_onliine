@@ -1,57 +1,84 @@
 import React, { useState, useEffect } from "react";
-
-// Data dummy siswa (nanti akan diambil dari backend)
-const initialSiswaList = [
-  { absen: 1, nisn: "1234567890", nama: "Budi", mapel1: 80, mapel2: 85 },
-  { absen: 2, nisn: "1234567891", nama: "Ani", mapel1: 90, mapel2: 88 },
-  { absen: 3, nisn: "1234567892", nama: "Siti", mapel1: 75, mapel2: 80 },
-  { absen: 4, nisn: "1234567893", nama: "Joko", mapel1: 85, mapel2: 82 },
-  { absen: 5, nisn: "1234567894", nama: "Rina", mapel1: 88, mapel2: 90 },
-  { absen: 6, nisn: "1234567895", nama: "Dani", mapel1: 72, mapel2: 75 },
-];
-
-const getRataRata = (siswa) => ((siswa.mapel1 + siswa.mapel2) / 2).toFixed(2);
+import axios from "axios";
+import { useAuth } from "../contexts/useAuth";
 
 const Perankingan = () => {
+  const { token, user } = useAuth();
   const [siswaList, setSiswaList] = useState([]);
   const [sortConfig, setSortConfig] = useState({
-    key: "absen",
+    key: "ranking",
     direction: "asc",
   });
   const [loading, setLoading] = useState(true);
+  const [namaKelas, setNamaKelas] = useState("");
+  const [error, setError] = useState(null);
 
-  // Simulasi fetch data dari backend
   useEffect(() => {
     const fetchData = async () => {
+      if (!token || !user?.kelasId) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Simulasi delay API
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setLoading(true);
+        setError(null);
 
-        // Menambahkan ranking ke data siswa
-        const dataWithRanking = initialSiswaList.map((siswa) => ({
-          ...siswa,
-          rataRata: parseFloat(getRataRata(siswa)),
-        }));
-
-        // Sort berdasarkan rata-rata untuk ranking
-        const sortedForRanking = [...dataWithRanking].sort(
-          (a, b) => b.rataRata - a.rataRata
+        // Fetch ranking data
+        const rankingResponse = await axios.get(
+          `http://localhost:5000/api/nilai/ranking/${user.kelasId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        const dataWithRankingFinal = dataWithRanking.map((siswa) => ({
-          ...siswa,
-          ranking: sortedForRanking.findIndex((s) => s.nisn === siswa.nisn) + 1,
-        }));
 
-        setSiswaList(dataWithRankingFinal);
+        // Fetch siswa data to get details (NISN, nama, noAbsen)
+        const siswaResponse = await axios.get(
+          `http://localhost:5000/api/siswa?kelasId=${user.kelasId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        // Fetch kelas data to get kelas name
+        const kelasResponse = await axios.get(
+          `http://localhost:5000/api/kelas/${user.kelasId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setNamaKelas(kelasResponse.data.nama);
+
+        // Merge ranking with siswa details
+        const mergedData = rankingResponse.data.map((ranking) => {
+          const siswa = siswaResponse.data.find(
+            (s) => s.id === ranking.siswaId
+          );
+          return {
+            siswaId: ranking.siswaId,
+            ranking: ranking.ranking,
+            rataRata: ranking.rataRata,
+            jumlahMapel: ranking.jumlahMapel,
+            nisn: siswa?.nisn || "-",
+            nama: siswa?.nama || "Tidak ditemukan",
+            noAbsen: siswa?.noAbsen || "-",
+          };
+        });
+
+        setSiswaList(mergedData);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(
+          error.response?.data?.error || "Gagal memuat data perankingan"
+        );
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [token, user]);
 
   // Fungsi sorting
   const handleSort = (key) => {
@@ -110,11 +137,33 @@ const Perankingan = () => {
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="p-8 min-h-screen bg-gray-50">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (siswaList.length === 0) {
+    return (
+      <div className="p-8 min-h-screen bg-gray-50">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800">
+            Belum ada data nilai untuk kelas ini. Silakan input nilai terlebih dahulu.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="p-8 min-h-screen bg-green-50">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-          Perankingan Siswa
+          Perankingan Siswa - {namaKelas}
         </h2>
         <p className="text-gray-600">
           Data perankingan berdasarkan rata-rata nilai semua mata pelajaran
@@ -169,11 +218,11 @@ const Perankingan = () => {
               <tr>
                 <th
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort("absen")}
+                  onClick={() => handleSort("noAbsen")}
                 >
                   <div className="flex items-center">
                     No Absen
-                    {getSortIcon("absen")}
+                    {getSortIcon("noAbsen")}
                   </div>
                 </th>
                 <th
@@ -195,13 +244,16 @@ const Perankingan = () => {
                   </div>
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mapel 1
+                  Jumlah Mapel
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mapel 2
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rata-rata
+                <th
+                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort("rataRata")}
+                >
+                  <div className="flex items-center justify-center">
+                    Rata-rata
+                    {getSortIcon("rataRata")}
+                  </div>
                 </th>
                 <th
                   className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
@@ -217,13 +269,13 @@ const Perankingan = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedData.map((siswa) => (
                 <tr
-                  key={siswa.nisn}
+                  key={siswa.siswaId}
                   className={`hover:bg-gray-50 transition-colors ${
                     siswa.ranking <= 3 ? "bg-yellow-50" : ""
                   }`}
                 >
                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
-                    {siswa.absen}
+                    {siswa.noAbsen}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                     {siswa.nisn}
@@ -243,10 +295,7 @@ const Perankingan = () => {
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                    {siswa.mapel1}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                    {siswa.mapel2}
+                    {siswa.jumlahMapel}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-900">
                     {siswa.rataRata.toFixed(2)}
@@ -259,7 +308,7 @@ const Perankingan = () => {
                           : siswa.ranking <= 3
                           ? "bg-green-100 text-green-800"
                           : siswa.ranking <= 10
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-blue-100 text-blue-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
@@ -279,11 +328,11 @@ const Perankingan = () => {
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Klik header kolom untuk mengurutkan data</li>
           <li>
-            • Data perankingan otomatis terupdate dari nilai mata pelajaran
+            • Perankingan dihitung berdasarkan rata-rata nilai akhir semua mata pelajaran
           </li>
           <li>• Siswa dengan ranking 1-3 mendapat highlight khusus</li>
           <li>
-            • Data ini bersifat read-only dan tersinkron dengan input nilai
+            • Data otomatis terupdate setiap kali nilai diinput atau diubah
           </li>
         </ul>
       </div>

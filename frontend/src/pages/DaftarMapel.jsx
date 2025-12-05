@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../contexts/useAuth";
 
 // Fungsi untuk mendapatkan inisial mata pelajaran
 const getInitials = (mapel) => {
@@ -22,37 +24,39 @@ const backgroundColors = [
 
 const DaftarNilaiMapel = () => {
   const navigate = useNavigate();
+  const { token, user } = useAuth();
   const [mapelList, setMapelList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [guru, setGuru] = useState(null);
+  const [kelas, setKelas] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Simulasi data dari database/API
+  // Fetch mata pelajaran dari API
   useEffect(() => {
     const fetchMapelData = async () => {
       try {
-        // Simulasi delay API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setLoading(true);
+        setError(null);
+        
+        const response = await axios.get("http://localhost:5000/api/mata-pelajaran", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        // Data dummy berdasarkan guru yang login (nanti diganti dengan API call)
-        const guruData = {
-          nama: "Budi Santoso",
-          kelas: "7A",
-          mapel: ["Matematika", "IPA", "Fisika"],
-        };
-
-        setGuru(guruData);
-        setMapelList(guruData.mapel);
-        setLoading(false);
+        setKelas(response.data.kelas);
+        setMapelList(response.data.mataPelajaran);
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Fallback data jika API error
-        setMapelList(["Matematika", "IPA"]);
+        setError("Gagal memuat data mata pelajaran");
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchMapelData();
-  }, []);
+    if (token) {
+      fetchMapelData();
+    }
+  }, [token]);
 
   if (loading) {
     return (
@@ -65,6 +69,27 @@ const DaftarNilaiMapel = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-8 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 min-h-screen bg-green-50">
       <div className="mb-8">
@@ -72,17 +97,17 @@ const DaftarNilaiMapel = () => {
           Daftar Mata Pelajaran
         </h2>
         <p className="text-gray-600">
-          Mata pelajaran yang diampu oleh {guru?.nama} - Kelas {guru?.kelas}
+          Kelas {kelas?.nama} - {user?.name}
         </p>
       </div>
 
       {mapelList.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-white rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-700 mb-2">
             Tidak ada mata pelajaran
           </h3>
           <p className="text-gray-500">
-            Belum ada mata pelajaran yang ditetapkan untuk akun ini
+            Belum ada mata pelajaran yang ditetapkan untuk kelas ini
           </p>
         </div>
       ) : (
@@ -101,19 +126,30 @@ const DaftarNilaiMapel = () => {
                                w-12 h-12 rounded-lg flex items-center justify-center mr-4`}
                 >
                   <span className="text-white font-semibold text-lg">
-                    {getInitials(mapel)}
+                    {getInitials(mapel.nama)}
                   </span>
                 </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-1">{mapel}</h3>
-                  <p className="text-sm text-gray-500">Kelas {guru?.kelas}</p>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900 mb-1">{mapel.nama}</h3>
+                  <p className="text-sm text-gray-500">{kelas?.nama}</p>
+                  {mapel.jumlahNilai > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      {mapel.jumlahNilai} nilai tersimpan
+                    </p>
+                  )}
                 </div>
               </div>
               <button
                 className="mt-auto px-4 py-2 bg-green-600 text-white rounded 
                          hover:bg-green-700 transition-colors text-sm font-medium"
                 onClick={() =>
-                  navigate("/dashboard/nilai-mapel", { state: { mapel } })
+                  navigate("/dashboard/nilai-mapel", { 
+                    state: { 
+                      mapel: mapel.nama,
+                      kelasId: kelas.id,
+                      namaKelas: kelas.nama
+                    } 
+                  })
                 }
               >
                 Kelola Nilai
