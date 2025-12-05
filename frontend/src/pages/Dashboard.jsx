@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Navbar from "../components/Navbar";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import DaftarMapel from "./DaftarMapel";
@@ -51,7 +51,7 @@ const Sidebar = () => {
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-blue-50">
+    <div className="min-h-screen bg-green-50">
       <Navbar />
       <div className="flex">
         <Sidebar />

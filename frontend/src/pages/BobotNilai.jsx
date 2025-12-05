@@ -21,7 +21,7 @@ const BobotNilai = () => {
   };
 
   return (
-    <div className="p-8 min-h-screen bg-blue-50">
+    <div className="p-8 min-h-screen bg-green-50">
       <h2 className="text-2xl font-semibold mb-6">Pengaturan Bobot Nilai</h2>
 
       <div className="bg-white rounded-lg shadow p-8 max-w-2xl mx-auto">
@@ -35,9 +35,9 @@ const BobotNilai = () => {
 
         <div className="space-y-6">
           {/* Bobot Nilai Harian */}
-          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold">📝</span>
               </div>
               <div>
@@ -60,7 +60,7 @@ const BobotNilai = () => {
                   max="100"
                 />
               ) : (
-                <span className="text-2xl font-bold text-blue-600">
+                <span className="text-2xl font-bold text-green-600">
                   {bobotHarian}
                 </span>
               )}
@@ -145,7 +145,7 @@ const BobotNilai = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
               >
                 Simpan
               </button>
@@ -153,7 +153,7 @@ const BobotNilai = () => {
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
             >
               Edit Bobot
             </button>

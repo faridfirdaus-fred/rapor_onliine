@@ -80,7 +80,7 @@ const NilaiMapel = () => {
   };
 
   return (
-    <div className="p-8 min-h-screen bg-blue-50">
+    <div className="p-8 min-h-screen bg-green-50">
       <div className="flex items-center mb-6">
         <button
           onClick={() => navigate("/dashboard/daftar-mapel")}
@@ -125,7 +125,7 @@ const NilaiMapel = () => {
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-lg shadow">
           <thead>
-            <tr className="bg-blue-100">
+            <tr className="bg-green-100">
               <th className="px-4 py-2 border">No Absen</th>
               <th className="px-4 py-2 border">NISN</th>
               <th className="px-4 py-2 border">Nama</th>
@@ -135,7 +135,7 @@ const NilaiMapel = () => {
               <th className="px-4 py-2 border">UAS</th>
               <th className="px-4 py-2 border">Rata-rata</th>
             </tr>
-            <tr className="bg-blue-50">
+            <tr className="bg-green-50">
               <th className="border"></th>
               <th className="border"></th>
               <th className="border"></th>
@@ -169,7 +169,7 @@ const NilaiMapel = () => {
                           e.target.value
                         )
                       }
-                      className="w-16 px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-16 px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="-"
                     />
                   </td>
@@ -183,7 +183,7 @@ const NilaiMapel = () => {
                     onChange={(e) =>
                       updateNilai(siswaIndex, "uas", null, e.target.value)
                     }
-                    className="w-16 px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-16 px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="-"
                   />
                 </td>
@@ -227,7 +227,7 @@ const NilaiMapel = () => {
             });
             alert("Data nilai berhasil disimpan!");
           }}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
         >
           Simpan Data
         </button>
