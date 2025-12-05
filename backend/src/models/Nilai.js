@@ -164,4 +164,13 @@ export class Nilai {
       details
     };
   }
+
+  static async countByMataPelajaran(kelasId, mataPelajaran) {
+    return await prisma.nilai.count({
+      where: {
+        kelasId,
+        mataPelajaran
+      }
+    });
+  }
 }

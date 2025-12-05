@@ -7,6 +7,7 @@ import kelasRoutes from "./routes/kelas.js";
 import siswaRoutes from "./routes/siswa.js";
 import nilaiRoutes from "./routes/nilai.js";
 import bobotNilaiRoutes from "./routes/bobotnilai.js";
+import mataPelajaranRoutes from "./routes/matapelajaran.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/kelas", authMiddleware, kelasRoutes);
 app.use("/api/siswa", authMiddleware, siswaRoutes);
 app.use("/api/nilai", authMiddleware, nilaiRoutes);
 app.use("/api/bobot-nilai", authMiddleware, bobotNilaiRoutes);
+app.use("/api/mata-pelajaran", authMiddleware, mataPelajaranRoutes);
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
