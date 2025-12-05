@@ -11,7 +11,9 @@ const router = express.Router();
 // GET all siswa (optionally filtered by kelasId)
 router.get('/', async (req, res) => {
   try {
-    const { kelasId, sort } = req.query;
+    const { sort } = req.query;
+    const kelasId = req.user.kelasId; // Guru always sees their own kelas only
+    
     let siswaList = await Siswa.findAll(kelasId);
 
     // Add nilai summary for each siswa
@@ -61,6 +63,11 @@ router.get('/:id', async (req, res) => {
     if (!siswa) {
       return res.status(404).json({ error: 'Siswa tidak ditemukan' });
     }
+    
+    // Check access - guru can only see siswa from their kelas
+    if (siswa.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
 
     const nilaiSummary = await Siswa.getNilaiSummary(siswa.id);
     const nilaiList = await Nilai.findBySiswa(siswa.id);
@@ -78,11 +85,12 @@ router.get('/:id', async (req, res) => {
 // CREATE new siswa
 router.post('/', async (req, res) => {
   try {
-    const { kelasId, nisn, nama, noAbsen } = req.body;
+    let { nisn, nama, noAbsen } = req.body;
+    const kelasId = req.user.kelasId; // Guru always uses their own kelasId
     
-    if (!kelasId || !nisn || !nama || !noAbsen) {
+    if (!nisn || !nama || !noAbsen) {
       return res.status(400).json({ 
-        error: 'Kelas ID, NISN, nama, dan nomor absen harus diisi' 
+        error: 'NISN, nama, dan nomor absen harus diisi' 
       });
     }
 
@@ -92,8 +100,9 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ error: 'Kelas tidak ditemukan' });
     }
 
-    const result = await Siswa.create({ kelasId, nisn, nama, noAbsen });
-    res.status(201).json(result);
+    // Create siswa
+    const siswa = await Siswa.create({ kelasId, nisn, nama, noAbsen });
+    res.status(201).json(siswa);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -102,7 +111,20 @@ router.post('/', async (req, res) => {
 // UPDATE siswa
 router.put('/:id', async (req, res) => {
   try {
-    const { nisn, nama, noAbsen, kelasId } = req.body;
+    // First check if siswa exists and get their kelasId
+    const existingSiswa = await Siswa.findById(req.params.id);
+    if (!existingSiswa) {
+      return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+    }
+    
+    // Check access - guru can only update siswa in their kelas
+    if (existingSiswa.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
+    const { nisn, nama, noAbsen } = req.body;
+    const kelasId = req.user.kelasId; // Guru cannot change kelasId
+    
     const result = await Siswa.update(req.params.id, { nisn, nama, noAbsen, kelasId });
     
     if (!result) {
@@ -118,6 +140,17 @@ router.put('/:id', async (req, res) => {
 // DELETE siswa
 router.delete('/:id', async (req, res) => {
   try {
+    // First check if siswa exists and get their kelasId
+    const existingSiswa = await Siswa.findById(req.params.id);
+    if (!existingSiswa) {
+      return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+    }
+    
+    // Check access - guru can only delete siswa in their kelas
+    if (existingSiswa.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     const result = await Siswa.delete(req.params.id);
     
     if (!result) {
@@ -133,11 +166,7 @@ router.delete('/:id', async (req, res) => {
 // IMPORT siswa from CSV
 router.post('/import', upload.single('file'), async (req, res) => {
   try {
-    const { kelasId } = req.body;
-    
-    if (!kelasId) {
-      return res.status(400).json({ error: 'Kelas ID harus diisi' });
-    }
+    const kelasId = req.user.kelasId; // Guru always imports to their own kelas
 
     // Check if kelas exists
     const kelas = await Kelas.findById(kelasId);

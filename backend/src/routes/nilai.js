@@ -9,7 +9,11 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { siswaId } = req.query;
-    const nilaiList = await Nilai.findAll(siswaId);
+    let nilaiList = await Nilai.findAll(siswaId);
+    
+    // Filter by kelas
+    nilaiList = nilaiList.filter(n => n.kelasId === req.user.kelasId);
+    
     res.json(nilaiList);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,6 +27,12 @@ router.get('/:id', async (req, res) => {
     if (!nilai) {
       return res.status(404).json({ error: 'Nilai tidak ditemukan' });
     }
+    
+    // Check access
+    if (nilai.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     res.json(nilai);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -57,11 +67,12 @@ router.get('/ranking/:kelasId', async (req, res) => {
 // CREATE new nilai
 router.post('/', async (req, res) => {
   try {
-    const { siswaId, kelasId, mataPelajaran, nilaiHarian, uas, bobotHarian, bobotUas } = req.body;
+    const { siswaId, mataPelajaran, nilaiHarian, uas, bobotHarian, bobotUas } = req.body;
+    const kelasId = req.user.kelasId; // Guru always uses their own kelasId
     
-    if (!siswaId || !kelasId || !mataPelajaran) {
+    if (!siswaId || !mataPelajaran) {
       return res.status(400).json({ 
-        error: 'Siswa ID, Kelas ID, dan mata pelajaran harus diisi' 
+        error: 'Siswa ID dan mata pelajaran harus diisi' 
       });
     }
 
@@ -102,6 +113,17 @@ router.post('/', async (req, res) => {
 // UPDATE nilai
 router.put('/:id', async (req, res) => {
   try {
+    // Check existing nilai for access control
+    const existingNilai = await Nilai.findById(req.params.id);
+    if (!existingNilai) {
+      return res.status(404).json({ error: 'Nilai tidak ditemukan' });
+    }
+    
+    // Check access for guru
+    if (req.user.role === 'guru' && existingNilai.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     const { mataPelajaran, nilaiHarian, uas, bobotHarian, bobotUas } = req.body;
     const updateData = {};
     
@@ -134,6 +156,17 @@ router.put('/:id', async (req, res) => {
 // DELETE nilai
 router.delete('/:id', async (req, res) => {
   try {
+    // Check existing nilai for access control
+    const existingNilai = await Nilai.findById(req.params.id);
+    if (!existingNilai) {
+      return res.status(404).json({ error: 'Nilai tidak ditemukan' });
+    }
+    
+    // Check access for guru
+    if (req.user.role === 'guru' && existingNilai.kelasId !== req.user.kelasId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
     const result = await Nilai.delete(req.params.id);
     
     if (!result) {

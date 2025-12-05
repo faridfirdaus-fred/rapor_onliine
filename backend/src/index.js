@@ -13,6 +13,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files (for uploaded images)
+app.use('/uploads', express.static('uploads'));
+
 app.get("/api", (req, res) => {
   res.json({ message: "Rapor Digital API - Backend Ready" });
 });

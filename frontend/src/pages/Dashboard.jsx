@@ -1,52 +1,73 @@
-import React, { useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import HomePage from './HomePage';
-import KelasDetailPage from './KelasDetailPage';
+import React, { useState } from "react";
+import Navbar from "../components/Navbar";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import DaftarMapel from "./DaftarMapel";
+import Perankingan from "./perankingan";
+import NilaiMapel from "./NilaiMapel";
+import BobotNilai from "./BobotNilai";
+import ProfilePage from "./ProfilePage";
 
-function Dashboard() {
+const Sidebar = () => {
   const navigate = useNavigate();
-  const [selectedKelas, setSelectedKelas] = useState(null);
-
-  const handleSelectKelas = (kelas) => {
-    setSelectedKelas(kelas);
-    navigate(`/kelas/${kelas.id}`);
-  };
-
-  const handleBackToHome = () => {
-    setSelectedKelas(null);
-    navigate('/');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <aside className="bg-white shadow-md min-h-screen w-56 py-8 px-4">
+      <ul className="space-y-4">
+        <li>
+          <button
+            className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition`}
+            onClick={() => navigate("/dashboard/profil")}
+          >
+            Profil Guru
+          </button>
+        </li>
+        <li>
+          <button
+            className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition`}
+            onClick={() => navigate("/dashboard/perankingan")}
+          >
+            Perankingan
+          </button>
+        </li>
+        <li>
+          <button
+            className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition`}
+            onClick={() => navigate("/dashboard/daftar-mapel")}
+          >
+            Daftar Mata Pelajaran
+          </button>
+        </li>
+        <li>
+          <button
+            className={`block w-full text-left px-3 py-2 rounded-lg font-medium transition`}
+            onClick={() => navigate("/dashboard/bobot-nilai")}
+          >
+            Pengaturan Bobot Nilai
+          </button>
+        </li>
+      </ul>
+    </aside>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <div className="min-h-screen bg-blue-50">
       <Navbar />
-      <Routes>
-        <Route 
-          path="/" 
-          element={<HomePage onSelectKelas={handleSelectKelas} />} 
-        />
-        <Route 
-          path="/kelas/:id" 
-          element={
-            selectedKelas ? (
-              <KelasDetailPage kelas={selectedKelas} onBack={handleBackToHome} />
-            ) : (
-              <div className="container mx-auto px-4 py-8">
-                <button 
-                  onClick={() => navigate('/')}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  ← Back to Home
-                </button>
-                <p className="mt-4">Loading...</p>
-              </div>
-            )
-          } 
-        />
-      </Routes>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <Routes>
+            <Route path="profil" element={<ProfilePage />} />
+            <Route path="perankingan" element={<Perankingan />} />
+            <Route path="daftar-mapel" element={<DaftarMapel />} />
+            <Route path="nilai-mapel" element={<NilaiMapel />} />
+            <Route path="bobot-nilai" element={<BobotNilai />} />
+            <Route path="*" element={<ProfilePage />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
-}
+};
 
 export default Dashboard;

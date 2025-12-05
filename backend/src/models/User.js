@@ -6,9 +6,10 @@ export class User {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = await prisma.user.create({
       data: {
-        email: data.email,
+        username: data.username,
         password: hashedPassword,
-        name: data.name || data.email.split('@')[0]
+        name: data.name || data.username,
+        kelasId: data.kelasId
       }
     });
     return user;
@@ -24,14 +25,9 @@ export class User {
     });
   }
 
-  static async findByEmail(email) {
-    return await prisma.user.findFirst({
-      where: {
-        email: {
-          equals: email,
-          mode: 'insensitive'
-        }
-      }
+  static async findByUsername(username) {
+    return await prisma.user.findUnique({
+      where: { username }
     });
   }
 
@@ -48,9 +44,12 @@ export class User {
   }
 
   static async update(id, data) {
+    // Don't allow updating password through this method
+    const { password, ...updateData } = data;
+    
     return await prisma.user.update({
       where: { id },
-      data
+      data: updateData
     });
   }
 
