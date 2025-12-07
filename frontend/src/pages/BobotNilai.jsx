@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/useAuth";
+import { API_URL } from "../services/api";
 import CustomAlert from "../components/CustomAlert";
 
 const BobotNilai = () => {
@@ -27,7 +28,7 @@ const BobotNilai = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/bobot-nilai/${user.kelasId}`,
+          `${API_URL}/bobot-nilai/${user.kelasId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -73,7 +74,7 @@ const BobotNilai = () => {
     try {
       setSaving(true);
       await axios.post(
-        `http://localhost:5000/api/bobot-nilai/${user.kelasId}`,
+        `${API_URL}/bobot-nilai/${user.kelasId}`,
         {
           bobotHarian: bobotHarian,
           bobotUas: bobotUAS,

@@ -11,7 +11,31 @@ import mataPelajaranRoutes from "./routes/matapelajaran.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 const app = express();
-app.use(cors());
+
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      process.env.CLIENT_URL || 'http://localhost:5173',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://rapor-micimerak.duckdns.org',
+      'https://rapor-micimerak.duckdns.org',
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files (for uploaded images)
@@ -43,6 +67,11 @@ process.on('SIGTERM', async () => {
 });
 
 // Start server after DB connection
+const PORT = process.env.PORT || 5000;
 connectDB().then(() => {
-  app.listen(5000, () => console.log("✅ Backend on port 5000"));
+  app.listen(PORT, () => {
+    console.log(`✅ Backend running on port ${PORT}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 API: http://localhost:${PORT}/api`);
+  });
 });

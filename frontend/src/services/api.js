@@ -1,4 +1,19 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// Determine API URL based on environment
+const getApiUrl = () => {
+  // If VITE_API_URL is set in .env, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Otherwise, use relative path for production or localhost for dev
+  if (import.meta.env.PROD) {
+    return '/api'; // Production: same domain
+  }
+  
+  return 'http://localhost:5000/api'; // Development fallback
+};
+
+const API_URL = getApiUrl();
 const BASE_URL = API_URL.replace("/api", "");
 
 // Export untuk digunakan di file lain
