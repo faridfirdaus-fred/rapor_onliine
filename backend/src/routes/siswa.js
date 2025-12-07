@@ -180,7 +180,15 @@ router.post('/import', upload.single('file'), async (req, res) => {
 
     const results = [];
     const errors = [];
+    const duplicates = [];
     let rowNumber = 0;
+
+    // Get existing siswa to check for duplicates and determine next noAbsen
+    const existingSiswa = await Siswa.findAll(kelasId);
+    const existingNISNs = new Set(existingSiswa.map(s => s.nisn.trim()));
+    const maxNoAbsen = existingSiswa.length > 0 
+      ? Math.max(...existingSiswa.map(s => s.noAbsen))
+      : 0;
 
     // Read and parse CSV
     const stream = fs.createReadStream(req.file.path)
@@ -205,9 +213,30 @@ router.post('/import', upload.single('file'), async (req, res) => {
           continue;
         }
 
-        // Auto-generate noAbsen (sequential)
-        const existingSiswa = await Siswa.findAll(kelasId);
-        const noAbsen = existingSiswa.length + results.length + 1;
+        // Check for duplicate NISN in existing database
+        if (existingNISNs.has(nisn)) {
+          duplicates.push({
+            row: rowNumber,
+            nisn,
+            nama,
+            message: 'NISN sudah ada di database'
+          });
+          continue;
+        }
+
+        // Check for duplicate NISN in current import batch
+        if (results.some(s => s.nisn === nisn)) {
+          duplicates.push({
+            row: rowNumber,
+            nisn,
+            nama,
+            message: 'NISN duplikat dalam file CSV'
+          });
+          continue;
+        }
+
+        // Auto-generate noAbsen (sequential from max existing)
+        const noAbsen = maxNoAbsen + results.length + 1;
 
         // Create siswa
         const siswa = await Siswa.create({
@@ -218,6 +247,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
         });
 
         results.push(siswa);
+        existingNISNs.add(nisn); // Add to set to prevent duplicates in same import
       } catch (error) {
         errors.push({
           row: rowNumber,
@@ -230,20 +260,18 @@ router.post('/import', upload.single('file'), async (req, res) => {
     // Delete uploaded file
     fs.unlinkSync(req.file.path);
 
-    // Sort results by nama (alphabetical)
-    results.sort((a, b) => a.nama.localeCompare(b.nama));
-
-    // Update noAbsen based on alphabetical order
-    await Promise.all(results.map((siswa, index) => 
-      Siswa.update(siswa.id, { noAbsen: index + 1 })
-    ));
-
     res.json({
-      success: true,
-      message: `Berhasil import ${results.length} siswa`,
+      success: results.length > 0,
+      message: results.length > 0 
+        ? `Berhasil import ${results.length} siswa baru` 
+        : 'Tidak ada siswa baru yang ditambahkan',
       imported: results.length,
+      duplicates: duplicates.length,
       failed: errors.length,
+      totalExisting: existingSiswa.length,
+      totalNow: existingSiswa.length + results.length,
       data: results,
+      duplicateDetails: duplicates.length > 0 ? duplicates : undefined,
       errors: errors.length > 0 ? errors : undefined
     });
   } catch (error) {

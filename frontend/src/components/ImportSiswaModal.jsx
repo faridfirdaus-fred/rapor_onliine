@@ -137,14 +137,35 @@ function ImportSiswaModal({ kelas, onClose, onSuccess }) {
                 : 'bg-yellow-50 border-yellow-300 text-yellow-700'
             }`}>
               <p className="font-semibold mb-2">{result.message}</p>
-              <p className="text-sm">
-                ✓ Berhasil: {result.imported} siswa
-              </p>
-              {result.failed > 0 && (
-                <p className="text-sm">⚠️ Gagal: {result.failed} baris</p>
+              <div className="text-sm space-y-1">
+                <p>✓ Berhasil ditambahkan: {result.imported} siswa</p>
+                {result.totalExisting !== undefined && (
+                  <p>📊 Total siswa sebelumnya: {result.totalExisting}</p>
+                )}
+                {result.totalNow !== undefined && (
+                  <p>📊 Total siswa sekarang: {result.totalNow}</p>
+                )}
+                {result.duplicates > 0 && (
+                  <p className="text-orange-600">⚠️ Duplikat (dilewati): {result.duplicates} siswa</p>
+                )}
+                {result.failed > 0 && (
+                  <p className="text-red-600">❌ Gagal: {result.failed} baris</p>
+                )}
+              </div>
+              
+              {result.duplicateDetails && result.duplicateDetails.length > 0 && (
+                <div className="mt-3 p-2 bg-orange-100 rounded max-h-32 overflow-y-auto">
+                  <p className="text-sm font-semibold mb-1">Siswa Duplikat (Sudah Ada):</p>
+                  {result.duplicateDetails.map((dup, idx) => (
+                    <p key={idx} className="text-xs">
+                      • Baris {dup.row}: {dup.nama} (NISN: {dup.nisn})
+                    </p>
+                  ))}
+                </div>
               )}
+              
               {result.errors && result.errors.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto">
+                <div className="mt-3 p-2 bg-red-100 rounded max-h-32 overflow-y-auto">
                   <p className="text-sm font-semibold mb-1">Error Details:</p>
                   {result.errors.map((err, idx) => (
                     <p key={idx} className="text-xs">
