@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../contexts/useAuth";
 import CustomAlert from "../components/CustomAlert";
 
 const BobotNilai = () => {
+  const { token, user } = useAuth();
   const [bobotHarian, setBobotHarian] = useState(40);
   const [bobotUAS, setBobotUAS] = useState(60);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
     type: "info",
@@ -12,7 +17,38 @@ const BobotNilai = () => {
     message: "",
   });
 
-  const handleSave = () => {
+  // Fetch bobot nilai saat halaman dimuat
+  useEffect(() => {
+    const fetchBobotNilai = async () => {
+      if (!token || !user?.kelasId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/bobot-nilai/${user.kelasId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (response.data) {
+          setBobotHarian(response.data.bobotHarian || 40);
+          setBobotUAS(response.data.bobotUas || 60);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching bobot nilai:", error);
+        // Jika belum ada data, gunakan default
+        setLoading(false);
+      }
+    };
+
+    fetchBobotNilai();
+  }, [token, user]);
+
+  const handleSave = async () => {
     // Validasi total bobot harus 100%
     if (bobotHarian + bobotUAS !== 100) {
       setAlert({
@@ -23,19 +59,65 @@ const BobotNilai = () => {
       });
       return;
     }
-    setIsEditing(false);
-    setAlert({
-      isOpen: true,
-      type: "success",
-      title: "Berhasil!",
-      message: "Bobot nilai berhasil disimpan!",
-    });
+
+    if (!user?.kelasId) {
+      setAlert({
+        isOpen: true,
+        type: "error",
+        title: "Error",
+        message: "Kelas tidak ditemukan!",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await axios.post(
+        `http://localhost:5000/api/bobot-nilai/${user.kelasId}`,
+        {
+          bobotHarian: bobotHarian,
+          bobotUas: bobotUAS,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setIsEditing(false);
+      setAlert({
+        isOpen: true,
+        type: "success",
+        title: "Berhasil!",
+        message: "Bobot nilai berhasil disimpan dan akan diterapkan ke semua nilai!",
+      });
+    } catch (error) {
+      console.error("Error saving bobot nilai:", error);
+      setAlert({
+        isOpen: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.error || "Gagal menyimpan bobot nilai!",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
     setBobotHarian(40);
     setBobotUAS(60);
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 min-h-screen bg-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat data bobot nilai...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 min-h-screen bg-green-50">
@@ -48,6 +130,11 @@ const BobotNilai = () => {
             Tentukan persentase bobot untuk setiap komponen penilaian. Total
             harus 100%.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              ℹ️ Perubahan bobot akan diterapkan ke semua nilai yang sudah ada di kelas ini.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -167,20 +254,26 @@ const BobotNilai = () => {
               <button
                 onClick={() => setIsEditing(false)}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                disabled={saving}
               >
                 Batal
               </button>
               <button
                 onClick={handleReset}
                 className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+                disabled={saving}
               >
                 Reset
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2"
+                disabled={saving}
               >
-                Simpan
+                {saving && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                <span>{saving ? "Menyimpan..." : "Simpan"}</span>
               </button>
             </>
           ) : (
