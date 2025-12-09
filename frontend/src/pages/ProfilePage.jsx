@@ -134,7 +134,15 @@ const ProfilePage = () => {
 
   const getProfilePhoto = () => {
     if (photoPreview) return photoPreview;
-    if (profile?.photo) return `${BASE_URL}${profile.photo}`;
+    
+    if (profile?.photo) {
+      const photoUrl = `${BASE_URL}${profile.photo}`;
+      console.log('Photo URL:', photoUrl);
+      console.log('BASE_URL:', BASE_URL);
+      console.log('profile.photo:', profile.photo);
+      return photoUrl;
+    }
+    
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
       profile?.name || "User"
     )}&background=2563eb&color=fff&size=200`;
@@ -230,6 +238,12 @@ const ProfilePage = () => {
                       src={getProfilePhoto()}
                       alt="Foto Profil"
                       className="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-lg"
+                      onError={(e) => {
+                        console.error('Image failed to load:', e.target.src);
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          profile?.name || "User"
+                        )}&background=2563eb&color=fff&size=200`;
+                      }}
                     />
                     {isEditing && (
                       <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">

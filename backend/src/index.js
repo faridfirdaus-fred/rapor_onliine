@@ -23,7 +23,6 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'http://rapor-micimerak.duckdns.org',
-      'https://rapor-micimerak.duckdns.org',
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {

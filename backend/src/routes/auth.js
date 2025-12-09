@@ -1,39 +1,11 @@
 import express from 'express';
 import crypto from 'crypto';
-import multer from 'multer';
-import path from 'path';
 import { User, ResetToken } from '../models/User.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
+import { uploadProfile, processProfilePhoto, deleteOldPhoto } from '../middleware/upload.js';
 import { sendResetPasswordEmail, sendWelcomeEmail } from '../utils/email.js';
 
 const router = express.Router();
-
-// Configure multer for profile photo upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/profiles/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (extname && mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
 
 // Register new user (DISABLED - accounts are pre-created)
 router.post('/register', async (req, res) => {
@@ -185,16 +157,28 @@ router.get('/profile', verifyToken, async (req, res) => {
 });
 
 // Update user profile
-router.put('/profile', verifyToken, upload.single('photo'), async (req, res) => {
+router.put('/profile', verifyToken, uploadProfile.single('photo'), processProfilePhoto, async (req, res) => {
   try {
     const { name } = req.body;
+    
+    // Get current user data to get old photo path
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     
     const updateData = {};
     if (name) updateData.name = name;
     
-    // If photo uploaded, add to update data
-    if (req.file) {
-      updateData.photo = `/uploads/profiles/${req.file.filename}`;
+    // If new photo uploaded, delete old one and use new one
+    if (req.processedFile) {
+      // Delete old photo if exists
+      if (currentUser.photo) {
+        deleteOldPhoto(currentUser.photo);
+      }
+      
+      updateData.photo = req.processedFile.path;
+      console.log(`📸 Photo compressed: ${req.file.size} bytes → ${req.processedFile.size} bytes`);
     }
     
     const updatedUser = await User.update(req.userId, updateData);
