@@ -59,10 +59,16 @@ export const uploadProfile = multer({
 // Middleware untuk kompres dan simpan foto profil
 export const processProfilePhoto = async (req, res, next) => {
   if (!req.file) {
+    console.log('⚠️ No file uploaded');
     return next();
   }
 
   try {
+    console.log('📸 Processing image upload:');
+    console.log('- Original filename:', req.file.originalname);
+    console.log('- Original size:', req.file.size, 'bytes');
+    console.log('- Mimetype:', req.file.mimetype);
+    
     // Generate unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const filename = `profile-${uniqueSuffix}.webp`;
@@ -72,7 +78,10 @@ export const processProfilePhoto = async (req, res, next) => {
     const dir = 'uploads/profiles';
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
+      console.log('📁 Created directory:', dir);
     }
+
+    console.log('🔄 Compressing image...');
 
     // Compress and convert to WebP (better compression)
     await sharp(req.file.buffer)
@@ -83,16 +92,25 @@ export const processProfilePhoto = async (req, res, next) => {
       .webp({ quality: 80 }) // Convert to WebP with 80% quality
       .toFile(filepath);
 
+    const fileSize = fs.statSync(filepath).size;
+    console.log('✅ Image compressed successfully');
+    console.log('- New filename:', filename);
+    console.log('- New size:', fileSize, 'bytes');
+    console.log('- Saved to:', filepath);
+    console.log('- Compression ratio:', ((1 - fileSize / req.file.size) * 100).toFixed(2) + '%');
+
     // Add file info to request
     req.processedFile = {
       filename: filename,
       path: `/uploads/profiles/${filename}`,
-      size: fs.statSync(filepath).size
+      size: fileSize
     };
+
+    console.log('📦 Processed file info:', req.processedFile);
 
     next();
   } catch (error) {
-    console.error('Error processing image:', error);
+    console.error('❌ Error processing image:', error);
     return res.status(500).json({ error: 'Gagal memproses gambar' });
   }
 };
@@ -100,18 +118,25 @@ export const processProfilePhoto = async (req, res, next) => {
 // Helper function to delete old photo
 export const deleteOldPhoto = (photoPath) => {
   if (!photoPath || photoPath === '/uploads/profiles/default-avatar.png') {
+    console.log('⚠️ No old photo to delete (null or default avatar)');
     return; // Don't delete default avatar
   }
 
   try {
+    console.log('🗑️ Attempting to delete old photo:', photoPath);
+    
     // Remove leading slash and construct full path
     const fullPath = photoPath.startsWith('/') ? photoPath.substring(1) : photoPath;
     
+    console.log('- Full path:', fullPath);
+    
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
-      console.log('✅ Old photo deleted:', fullPath);
+      console.log('✅ Old photo deleted successfully:', fullPath);
+    } else {
+      console.log('⚠️ Old photo not found on filesystem:', fullPath);
     }
   } catch (error) {
-    console.error('⚠️ Error deleting old photo:', error.message);
+    console.error('❌ Error deleting old photo:', error.message);
   }
 };

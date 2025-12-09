@@ -161,11 +161,19 @@ router.put('/profile', verifyToken, uploadProfile.single('photo'), processProfil
   try {
     const { name } = req.body;
     
+    console.log('📝 Update profile request:');
+    console.log('- User ID:', req.userId);
+    console.log('- Name:', name);
+    console.log('- Has file:', !!req.file);
+    console.log('- Processed file:', req.processedFile);
+    
     // Get current user data to get old photo path
     const currentUser = await User.findById(req.userId);
     if (!currentUser) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    console.log('👤 Current user photo:', currentUser.photo);
     
     const updateData = {};
     if (name) updateData.name = name;
@@ -179,16 +187,22 @@ router.put('/profile', verifyToken, uploadProfile.single('photo'), processProfil
       
       updateData.photo = req.processedFile.path;
       console.log(`📸 Photo compressed: ${req.file.size} bytes → ${req.processedFile.size} bytes`);
+      console.log(`💾 Saving photo path to DB: ${updateData.photo}`);
     }
     
+    console.log('📦 Update data:', updateData);
+    
     const updatedUser = await User.update(req.userId, updateData);
+    
+    console.log('✅ User updated successfully');
+    console.log('📷 New photo path in DB:', updatedUser.photo);
     
     res.json({ 
       message: 'Profile updated successfully',
       user: User.sanitize(updatedUser)
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error('❌ Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
