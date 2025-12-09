@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../contexts/useAuth";
-import { API_URL, BASE_URL } from "../services/api";
+import { API_URL } from "../services/api";
 
 const ProfilePage = () => {
   const { token, login } = useAuth();
@@ -136,11 +136,9 @@ const ProfilePage = () => {
     if (photoPreview) return photoPreview;
     
     if (profile?.photo) {
-      const photoUrl = `${BASE_URL}${profile.photo}`;
-      console.log('Photo URL:', photoUrl);
-      console.log('BASE_URL:', BASE_URL);
-      console.log('profile.photo:', profile.photo);
-      return photoUrl;
+      // Photo is now stored as base64 string in database
+      console.log('Photo data (base64):', profile.photo.substring(0, 50) + '...');
+      return profile.photo;
     }
     
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(

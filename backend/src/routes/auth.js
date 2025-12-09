@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { User, ResetToken } from '../models/User.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
-import { uploadProfile, processProfilePhoto, deleteOldPhoto } from '../middleware/upload.js';
+import { uploadProfile, processProfilePhoto } from '../middleware/upload.js';
 import { sendResetPasswordEmail, sendWelcomeEmail } from '../utils/email.js';
 
 const router = express.Router();
@@ -178,24 +178,19 @@ router.put('/profile', verifyToken, uploadProfile.single('photo'), processProfil
     const updateData = {};
     if (name) updateData.name = name;
     
-    // If new photo uploaded, delete old one and use new one
+    // If new photo uploaded, save base64 to database
     if (req.processedFile) {
-      // Delete old photo if exists
-      if (currentUser.photo) {
-        deleteOldPhoto(currentUser.photo);
-      }
-      
-      updateData.photo = req.processedFile.path;
+      updateData.photo = req.processedFile.base64;
       console.log(`📸 Photo compressed: ${req.file.size} bytes → ${req.processedFile.size} bytes`);
-      console.log(`💾 Saving photo path to DB: ${updateData.photo}`);
+      console.log(`💾 Saving base64 photo to DB (length: ${req.processedFile.base64.length} chars)`);
     }
     
-    console.log('📦 Update data:', updateData);
+    console.log('📦 Update data:', { ...updateData, photo: updateData.photo ? `[base64 data ${updateData.photo.length} chars]` : 'no change' });
     
     const updatedUser = await User.update(req.userId, updateData);
     
     console.log('✅ User updated successfully');
-    console.log('📷 New photo path in DB:', updatedUser.photo);
+    console.log('📷 Photo saved to DB:', updatedUser.photo ? `Yes (${updatedUser.photo.length} chars)` : 'No');
     
     res.json({ 
       message: 'Profile updated successfully',
